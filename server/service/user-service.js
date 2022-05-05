@@ -13,25 +13,14 @@ class UserService {
             throw ApiError.BadRequest(`Пользователь с почтовым адресом ${email} уже существует`)
         }
         const hashPassword = await bcrypt.hash(password, 3);
-        const activationLink = uuid.v4(); // v34fa-asfasf-142saf-sa-asf
 
-        const user = await UserModel.create({email, password: hashPassword, activationLink})
-        await mailService.sendActivationMail(email, `${process.env.API_URL}/api/activate/${activationLink}`);
+        const user = await UserModel.create({email, password: hashPassword})
 
-        const userDto = new UserDto(user); // id, email, isActivated
+        const userDto = new UserDto(user); // id, email
         const tokens = tokenService.generateTokens({...userDto});
         await tokenService.saveToken(userDto.id, tokens.refreshToken);
 
         return {...tokens, user: userDto}
-    }
-
-    async activate(activationLink) {
-        const user = await UserModel.findOne({activationLink})
-        if (!user) {
-            throw ApiError.BadRequest('Неккоректная ссылка активации')
-        }
-        user.isActivated = true;
-        await user.save();
     }
 
     async login(email, password) {
